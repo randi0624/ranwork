@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>地名天气查询</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>地理名称天气查询</h1>
+      <p class="desc">输入城市或地区名称，实时查询当地天气。</p>
+      <form id="weather-form">
+        <input id="place" name="place" type="text" placeholder="例如：北京、上海、London" required />
+        <button type="submit">查询天气</button>
+      </form>
+
+      <section id="result" class="result hidden"></section>
+      <p id="error" class="error hidden"></p>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
