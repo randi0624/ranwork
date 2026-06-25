@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>新能源车辆出险风险规则模型</title>
+  <style>
+    :root{--bg:#f5f7fb;--panel:#fff;--ink:#1f2937;--muted:#667085;--line:#d8dee8;--brand:#0f766e;--soft:#e9f7f5;--red:#b91c1c;--amber:#b45309;--blue:#2563eb;--green:#15803d}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI","Microsoft YaHei",Arial,sans-serif;font-size:14px;line-height:1.62}.layout{display:grid;grid-template-columns:270px 1fr;min-height:100vh}aside{position:sticky;top:0;height:100vh;overflow:auto;background:#fff;border-right:1px solid var(--line);padding:22px 18px}aside h1{font-size:18px;line-height:1.25;margin:0 0 10px}aside p{margin:0 0 18px;color:var(--muted);font-size:13px}nav a{display:block;padding:8px 10px;margin-bottom:4px;border-radius:8px;text-decoration:none;color:var(--ink);font-weight:650;font-size:13px}nav a:hover{background:var(--soft);color:#075e57}main{max-width:1450px;padding:28px 34px 60px}.hero,section{background:var(--panel);border:1px solid var(--line);border-radius:8px}.hero{padding:24px;margin-bottom:18px}.hero h2{margin:0 0 10px;font-size:26px;line-height:1.2}.meta,.lead{color:var(--muted)}section{padding:22px;margin:16px 0}h2{font-size:22px;margin:0 0 14px}h3{font-size:17px;margin:20px 0 8px}.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}.card{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:14px}.card b{display:block;font-size:22px}.card span{color:var(--muted);font-size:12px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}th,td{border-bottom:1px solid #edf1f6;padding:9px 8px;text-align:left;vertical-align:top}th{background:#f8fafc;color:#475467}code{font-family:Consolas,Menlo,monospace;background:#f3f5f8;padding:1px 4px;border-radius:4px;font-size:12px}pre,.formula{white-space:pre-wrap;background:#101828;color:#e5e7eb;padding:14px;border-radius:8px;overflow:auto;font-size:13px}.formula{background:#f8fafc;color:#1f2937;border-left:4px solid var(--brand)}.pill{display:inline-block;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700}.p-high{background:#fee2e2;color:var(--red)}.p-mid{background:#fff7ed;color:var(--amber)}.p-info{background:#dbeafe;color:var(--blue)}.p-low{background:#dcfce7;color:var(--green)}.note{background:#fffbeb;border:1px solid #fde68a;color:#7c4a03;border-radius:8px;padding:12px 14px}.dim-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.dim{border:1px solid var(--line);border-radius:8px;background:#fcfdff;padding:14px}.dim h3{margin-top:0}.bar{height:10px;background:#edf2f7;border-radius:999px;overflow:hidden;margin:8px 0 10px}.bar i{display:block;height:100%;background:linear-gradient(90deg,#0f766e,#2563eb)}@media(max-width:1000px){.layout{grid-template-columns:1fr}aside{position:static;height:auto}main{padding:18px}.cards,.dim-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <h1>新能源车辆出险风险规则模型</h1>
+    <p>仅使用动态事实字段制定规则，不复用历史自定义评分。</p>
+    <nav>
+      <a href="#principle">建模原则</a>
+      <a href="#score">综合指数</a>
+      <a href="#dimensions">风险维度</a>
+      <a href="#rules">算法规则</a>
+      <a href="#evidence">证据链</a>
+      <a href="#mapping">字段映射</a>
+      <a href="#sql">落地口径</a>
+    </nav>
+  </aside>
+  <main>
+    <div class="hero">
+      <h2>基于 32960 / 企标动态数据的新能源车辆出险风险规则模型</h2>
+      <div class="meta">数据范围：<code>ads_vehicle_app_prod</code>、<code>dws_vehicle_sum_prod</code>、<code>dwd_vehicle_can_prod</code>；不使用库中既有评分字段。</div>
+      <div class="cards">
+        <div class="card"><b>0</b><span>历史评分入模</span></div>
+        <div class="card"><b>8</b><span>事实风险维度</span></div>
+        <div class="card"><b>0-100</b><span>综合风险指数</span></div>
+        <div class="card"><b>可解释</b><span>字段证据链</span></div>
+      </div>
+    </div>
+
+    <section id="principle">
+      <h2>1. 建模原则</h2>
+      <div class="note">明确排除：<code>vehicle_and_battery_score</code> 中的 <code>battery_overall_score</code>、<code>vehicle_overall_score</code>、<code>driving_behavior_score</code>、<code>motor_score</code>、<code>charge_score</code>、<code>chassis_score</code> 等历史自定义评分，不作为模型输入。</div>
+      <table>
+        <thead><tr><th>原则</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>只用事实字段</td><td>使用次数、时长、里程、速度、SOC、电压、温度、报警等级、碰撞前后帧等客观数据。</td></tr>
+          <tr><td>先规则后校准</td><td>先由风控专家定义规则和阈值，再用真实理赔结果校准权重。</td></tr>
+          <tr><td>强解释性</td><td>每个风险标签都能回溯到具体表、字段、时间和证据值。</td></tr>
+          <tr><td>分层输出</td><td>输出综合分、维度分、风险标签、证据链和保司动作建议。</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="score">
+      <h2>2. 综合风险指数</h2>
+      <table>
+        <thead><tr><th>分数</th><th>等级</th><th>含义</th><th>建议动作</th></tr></thead>
+        <tbody>
+          <tr><td>0-30</td><td><span class="pill p-low">低风险</span></td><td>动态行为稳定，无严重故障或事故链路。</td><td>正常承保/续保。</td></tr>
+          <tr><td>31-60</td><td><span class="pill p-info">中风险</span></td><td>存在单项风险或轻度异常。</td><td>展示关注项，必要时费率微调。</td></tr>
+          <tr><td>61-80</td><td><span class="pill p-mid">高风险</span></td><td>多项异常叠加，或单项严重风险。</td><td>人工核保，限制责任或调整免赔。</td></tr>
+          <tr><td>81-100</td><td><span class="pill p-high">极高风险</span></td><td>疑似真实事故、严重故障、电池安全隐患或道德风险。</td><td>强制复核，必要时拒保/理赔调查。</td></tr>
+        </tbody>
+      </table>
+      <div class="formula">risk_score =
+  driving_behavior_score       * 0.18
++ collision_accident_score     * 0.18
++ battery_safety_score         * 0.16
++ fault_alarm_score            * 0.14
++ charging_behavior_score      * 0.10
++ motor_powertrain_score       * 0.08
++ exposure_scenario_score      * 0.08
++ abnormal_moral_hazard_score  * 0.08</div>
+      <p>强规则：若疑似真实事故、三级故障持续、制动/高压互锁严重报警、电池温差/压差严重异常、碰撞前异常加速且事故后停车熄火，则综合分直接拉升到高风险或极高风险。</p>
+    </section>
+
+    <section id="dimensions">
+      <h2>3. 八大风险维度</h2>
+      <div class="dim-grid">
+        <div class="dim"><h3>驾驶行为 <span class="pill p-info">18%</span></h3><div class="bar"><i style="width:18%"></i></div><p>超速、疲劳、分心、危险驾驶、急加速、急减速、急转弯、夜间、低 SOC 行驶。</p></div>
+        <div class="dim"><h3>疑似事故/碰撞 <span class="pill p-high">18%</span></h3><div class="bar"><i style="width:18%"></i></div><p>碰撞预警、碰撞前异常加速、碰撞后停车熄火、开门、传感器故障、前后 100 秒帧。</p></div>
+        <div class="dim"><h3>电池安全 <span class="pill p-mid">16%</span></h3><div class="bar"><i style="width:16%"></i></div><p>过充、过放、高温暴露、绝缘异常、单体电压极差、温度极差、带故障行驶。</p></div>
+        <div class="dim"><h3>故障报警 <span class="pill p-mid">14%</span></h3><div class="bar"><i style="width:14%"></i></div><p>国标报警等级、报警类型、持续时长、报警帧数、故障期间速度/SOC/电池异常。</p></div>
+        <div class="dim"><h3>充电行为 <span class="pill p-info">10%</span></h3><div class="bar"><i style="width:10%"></i></div><p>高频充电、高频快充、低电量充电、夜间充电、充电功率波动。</p></div>
+        <div class="dim"><h3>电机动力 <span class="pill p-info">8%</span></h3><div class="bar"><i style="width:8%"></i></div><p>电机高温、控制器高温、电机故障数、输出功率峰值与功率冲击。</p></div>
+        <div class="dim"><h3>暴露场景 <span class="pill p-info">8%</span></h3><div class="bar"><i style="width:8%"></i></div><p>总里程、总时长、夜间、高峰、风险天气、跨区域、长距离、长时间行驶。</p></div>
+        <div class="dim"><h3>异常/道德风险 <span class="pill p-mid">8%</span></h3><div class="bar"><i style="width:8%"></i></div><p>事故前反复经过地点、事故后行为链路异常、报案与动态证据冲突、传感器故障异常。</p></div>
+      </div>
+    </section>
+
+    <section id="rules">
+      <h2>4. 具体算法规则</h2>
+      <h3>4.1 驾驶行为风险</h3>
+      <table>
+        <thead><tr><th>规则</th><th>事实字段</th><th>评分口径</th></tr></thead>
+        <tbody>
+          <tr><td>超速风险</td><td><code>is_over_speed_driving</code>、<code>over_speed_nums</code>、<code>drun_max_speed</code></td><td>命中月度超速 +15；日超速次数按百公里归一，最高 +25；最大车速异常 +10。</td></tr>
+          <tr><td>疲劳与长时间行驶</td><td><code>is_high_freq_fatigue_driving</code>、<code>fatigue_driving_nums</code>、<code>long_time_run_nums</code></td><td>疲劳驾驶命中 +20；长时间行驶频繁 +10~20；夜间叠加 +5。</td></tr>
+          <tr><td>三急行为</td><td><code>rapid_deceleration_nums</code>、<code>rapid_acceleration_nums</code>、<code>sharp_turn_nums</code></td><td>按百公里次数归一：急减速权重 1.2，急加速 1.0，急转弯 1.1。</td></tr>
+          <tr><td>分心/危险驾驶</td><td><code>distracted_driving_nums</code>、<code>dangerous_driving_nums</code></td><td>高频分心 +20；高频危险驾驶 +30；两者同时命中额外 +10。</td></tr>
+        </tbody>
+      </table>
+      <div class="formula">driving_behavior_score =
+min(100,
+  15 * is_over_speed_driving
++ 20 * is_high_freq_fatigue_driving
++ 20 * is_high_freq_distracted_driving
++ 30 * is_high_freq_dangerous_driving
++ per100km(rapid_deceleration_nums) * 1.2
++ per100km(rapid_acceleration_nums) * 1.0
++ per100km(sharp_turn_nums) * 1.1
++ 8  * is_deep_night_driving
++ 8  * is_high_freq_low_soc_driving)</div>
+
+      <h3>4.2 疑似事故与碰撞风险</h3>
+      <table>
+        <thead><tr><th>规则</th><th>事实字段</th><th>评分口径</th></tr></thead>
+        <tbody>
+          <tr><td>疑似真实事故</td><td><code>cw_after_5min_is_fact_accident</code>、<code>cw_after_5min_zero_speed_time</code>、<code>cw_after_5min_stop_time</code></td><td>疑似真实事故 +60；5 分钟内停车/熄火 +20。</td></tr>
+          <tr><td>碰撞前异常驾驶</td><td><code>crash_before_is_unusual_add_speed</code>、<code>cw_before_2min_is_unsafe_driving</code>、<code>cw_before_10min_driving_warn_nums</code></td><td>异常加速 +35；2 分钟内不安全驾驶 +25；10 分钟预警每次 +4，封顶 +20。</td></tr>
+          <tr><td>碰撞后行为异常</td><td><code>cw_after_6h_sensor_fault_time_list</code>、<code>cw_after_first_stop_time_length</code>、<code>cw_trip_after_6h_door_open_off_nums</code></td><td>传感器故障 +20；停留异常 +10~20；车门开关异常 +5~15。</td></tr>
+          <tr><td>碰撞帧证据</td><td><code>frame_data_speed</code>、<code>frame_data_brake_effort</code>、<code>frame_data_accelerator_pedal_position</code></td><td>用于比对事故描述与责任判断；冲突时进入道德风险强规则。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>4.3 电池安全风险</h3>
+      <table>
+        <thead><tr><th>规则</th><th>事实字段</th><th>评分口径</th></tr></thead>
+        <tbody>
+          <tr><td>过充过放</td><td><code>over_charge_nums</code>、<code>over_discharge_nums</code>、<code>over_charge_discharge_nums</code></td><td>每次 +5，月度封顶 +35；过充过放同时出现额外 +10。</td></tr>
+          <tr><td>高温暴露</td><td><code>high_temperature_nums</code></td><td>每次 +4，封顶 +30；高温叠加快充额外 +10。</td></tr>
+          <tr><td>电压/温度极差</td><td><code>alarm_max_cell_voltage_diff</code>、<code>alarm_max_cell_temp_diff</code></td><td>按阈值分段：轻度 +15，中度 +35，严重 +70。</td></tr>
+          <tr><td>绝缘/高压风险</td><td><code>hvil_alarm_nums</code>、国标绝缘相关 <code>alarm_type</code></td><td>高压互锁每次 +15；绝缘相关高等级告警直接高风险。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>4.4 故障报警风险</h3>
+      <table>
+        <thead><tr><th>规则</th><th>事实字段</th><th>评分口径</th></tr></thead>
+        <tbody>
+          <tr><td>报警等级</td><td><code>alarm_level</code>、<code>alarm_max_level</code></td><td>1 级 +15，2 级 +35，3 级 +70。</td></tr>
+          <tr><td>带故障行驶</td><td><code>with_alarm_run_nums</code>、<code>drun_with_alarm_run_mileage</code></td><td>次数 + 里程双因子；带故障行驶超过 20km 额外 +20。</td></tr>
+          <tr><td>制动系统报警</td><td><code>brake_system_alarm_nums</code></td><td>每次 +20，封顶 +80。</td></tr>
+          <tr><td>报警持续性</td><td><code>start_time</code>、<code>end_time</code>、<code>alarm_contain_frames</code></td><td>持续时间越长、帧数越多，风险越高。</td></tr>
+        </tbody>
+      </table>
+
+      <h3>4.5 充电、电机和暴露规则</h3>
+      <table>
+        <thead><tr><th>维度</th><th>事实字段</th><th>评分口径</th></tr></thead>
+        <tbody>
+          <tr><td>充电习惯</td><td><code>is_high_freq_charging</code>、<code>is_high_freq_fast_charging</code>、<code>is_high_freq_low_soc_charging</code></td><td>高频充电 +10；高频快充 +20；低 SOC 充电 +20；三者叠加进入中高风险。</td></tr>
+          <tr><td>电机温度</td><td><code>motor_temp_too_high</code>、<code>motor_temp_max</code>、<code>motor_controller_temp_too_high</code></td><td>温度过高次数每次 +8；最高温超阈值 +15~35。</td></tr>
+          <tr><td>电机故障</td><td><code>motor_fault_nums_max</code>、<code>motor_fault_nums_avg</code></td><td>故障数大于 0 即 +20；高频或持续故障 +40。</td></tr>
+          <tr><td>暴露场景</td><td><code>total_run_mileage</code>、<code>total_run_time_length</code>、<code>night_run_nums</code>、<code>risk_weather_run_nums</code></td><td>高里程/高时长/夜间/风险天气/跨区域分段加分。</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="evidence">
+      <h2>5. 保司证据链展示</h2>
+      <table>
+        <thead><tr><th>风险标签</th><th>证据字段</th><th>展示文案</th><th>动作建议</th></tr></thead>
+        <tbody>
+          <tr><td>高频危险驾驶</td><td><code>dangerous_driving_nums</code>、<code>is_high_freq_dangerous_driving</code></td><td>近 30 天危险驾驶行为高于阈值。</td><td>核保关注驾驶风险。</td></tr>
+          <tr><td>疑似真实事故</td><td><code>cw_after_5min_is_fact_accident</code>、<code>cw_after_5min_zero_speed_time</code></td><td>碰撞预警后车辆停车/熄火，疑似真实事故。</td><td>进入理赔调查。</td></tr>
+          <tr><td>电池安全异常</td><td><code>alarm_max_cell_voltage_diff</code>、<code>alarm_max_cell_temp_diff</code>、<code>hvil_alarm_nums</code></td><td>电池极差或高压系统存在异常。</td><td>要求检测/维修证明。</td></tr>
+          <tr><td>带故障行驶</td><td><code>with_alarm_run_nums</code>、<code>drun_with_alarm_run_mileage</code></td><td>车辆故障状态下仍持续行驶。</td><td>提高风险等级。</td></tr>
+          <tr><td>高频快充低电量</td><td><code>is_high_freq_fast_charging</code>、<code>is_high_freq_low_soc_charging</code></td><td>充电习惯可能加速电池衰减。</td><td>纳入电池风险。</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="mapping">
+      <h2>6. 字段映射</h2>
+      <table>
+        <thead><tr><th>维度</th><th>推荐表</th><th>核心事实字段</th></tr></thead>
+        <tbody>
+          <tr><td>驾驶行为</td><td><code>dws_risky_driving_habits_warning</code>、<code>dws_vehicle_assessment_daily_analysis</code></td><td><code>is_over_speed_driving</code>、<code>is_high_freq_fatigue_driving</code>、<code>is_high_freq_dangerous_driving</code>、<code>rapid_deceleration_nums</code>、<code>rapid_acceleration_nums</code>、<code>sharp_turn_nums</code></td></tr>
+          <tr><td>暴露场景</td><td><code>dws_driving_daily_summary</code></td><td><code>drun_total_mileage</code>、<code>drun_total_time_length</code>、<code>drun_night_total_mileage</code>、<code>drun_risk_weather_run_mileage</code>、<code>drun_leave_city_nums</code></td></tr>
+          <tr><td>碰撞事故</td><td><code>possible_accident_event</code>、<code>ads_cw_before_after_100s_frame_datas</code></td><td><code>cw_speed</code>、<code>cw_soc</code>、<code>cw_after_5min_is_fact_accident</code>、<code>crash_before_is_unusual_add_speed</code>、<code>frame_data_speed</code>、<code>frame_data_brake_effort</code></td></tr>
+          <tr><td>电池安全</td><td><code>dws_vehicle_assessment_daily_analysis</code>、<code>dwd_fault_gb_alarm_agg</code></td><td><code>over_charge_nums</code>、<code>over_discharge_nums</code>、<code>high_temperature_nums</code>、<code>hvil_alarm_nums</code>、<code>alarm_max_cell_voltage_diff</code>、<code>alarm_max_cell_temp_diff</code></td></tr>
+          <tr><td>故障报警</td><td><code>alarm_event_real_time</code>、<code>dwd_fault_gb_alarm_agg</code></td><td><code>alarm_level</code>、<code>alarm_type</code>、<code>alarm_contain_frames</code>、<code>alarm_start_speed</code>、<code>alarm_start_soc</code></td></tr>
+          <tr><td>充电行为</td><td><code>dws_month_risky_charging_habits_warning</code></td><td><code>is_high_freq_charging</code>、<code>is_high_freq_fast_charging</code>、<code>is_low_freq_night_charging</code>、<code>is_high_freq_low_soc_charging</code></td></tr>
+          <tr><td>电机动力</td><td><code>dws_vehicle_motor_daily_analysis</code></td><td><code>motor_temp_too_high</code>、<code>motor_temp_max</code>、<code>motor_controller_temp_too_high</code>、<code>motor_out_power_max</code>、<code>motor_fault_nums_max</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="sql">
+      <h2>7. 建议结果表</h2>
+      <pre>CREATE TABLE ads_vehicle_risk_rule_result (
+  score_date DATE COMMENT '评分日期',
+  vid VARCHAR(100) COMMENT '车辆唯一编码',
+  risk_score DECIMAL(5,2) COMMENT '综合风险分',
+  risk_level VARCHAR(20) COMMENT '低/中/高/极高',
+  driving_behavior_score DECIMAL(5,2),
+  collision_accident_score DECIMAL(5,2),
+  battery_safety_score DECIMAL(5,2),
+  fault_alarm_score DECIMAL(5,2),
+  charging_behavior_score DECIMAL(5,2),
+  motor_powertrain_score DECIMAL(5,2),
+  exposure_scenario_score DECIMAL(5,2),
+  abnormal_moral_hazard_score DECIMAL(5,2),
+  risk_tags STRING COMMENT '风险标签JSON',
+  evidence_json STRING COMMENT '证据链JSON',
+  underwriting_suggestion STRING COMMENT '保司动作建议',
+  create_time DATETIME COMMENT '生成时间'
+);</pre>
+    </section>
+  </main>
+</div>
+</body>
+</html>
