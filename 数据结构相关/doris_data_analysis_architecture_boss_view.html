@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>车联网数据分析架构汇报方案</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #607086;
+      --line: #d8e0ea;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --teal: #0f766e;
+      --blue: #2563eb;
+      --green: #16a34a;
+      --amber: #b45309;
+      --red: #dc2626;
+      --violet: #7c3aed;
+      --slate: #334155;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.65;
+    }
+    .page { max-width: 1180px; margin: 0 auto; padding: 28px 24px 56px; }
+    header {
+      padding: 34px 0 20px;
+      border-bottom: 1px solid var(--line);
+    }
+    .eyebrow {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--teal);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+    h1 { margin: 10px 0 10px; font-size: 36px; line-height: 1.16; letter-spacing: 0; }
+    .subtitle { margin: 0; color: var(--muted); font-size: 17px; max-width: 900px; }
+    section { padding: 30px 0; border-bottom: 1px solid var(--line); }
+    h2 { margin: 0 0 16px; font-size: 24px; line-height: 1.25; letter-spacing: 0; }
+    h3 { margin: 0 0 10px; font-size: 17px; line-height: 1.3; letter-spacing: 0; }
+    p { margin: 0 0 12px; }
+    .grid { display: grid; gap: 14px; }
+    .grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 112px;
+    }
+    .metric strong { display: block; font-size: 30px; line-height: 1; margin-bottom: 8px; }
+    .metric span { display: block; color: var(--muted); font-size: 13px; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 2px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .flow {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+      gap: 12px;
+      align-items: stretch;
+    }
+    .flow .stage {
+      position: relative;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      min-height: 146px;
+    }
+    .flow .stage::after {
+      content: "";
+      position: absolute;
+      right: -10px;
+      top: 50%;
+      width: 18px;
+      height: 18px;
+      border-right: 2px solid #9aa8ba;
+      border-top: 2px solid #9aa8ba;
+      transform: translateY(-50%) rotate(45deg);
+      background: var(--bg);
+      z-index: 2;
+    }
+    .flow .stage:last-child::after { display: none; }
+    .stage b { display: block; margin-bottom: 7px; font-size: 15px; }
+    .stage small { display: block; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .accent-teal { border-top: 4px solid var(--teal); }
+    .accent-blue { border-top: 4px solid var(--blue); }
+    .accent-green { border-top: 4px solid var(--green); }
+    .accent-amber { border-top: 4px solid var(--amber); }
+    .accent-red { border-top: 4px solid var(--red); }
+    .accent-violet { border-top: 4px solid var(--violet); }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    th, td { padding: 11px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: #eef3f8; color: #26364d; font-size: 13px; }
+    td { font-size: 14px; }
+    tr:last-child td { border-bottom: 0; }
+    code { font-family: Consolas, Menlo, monospace; color: #17406f; font-size: 12px; }
+    .note {
+      border-left: 4px solid var(--teal);
+      background: #eef8f6;
+      padding: 14px 16px;
+      border-radius: 0 8px 8px 0;
+      color: #24423f;
+    }
+    .warning {
+      border-left: 4px solid var(--amber);
+      background: #fff7ed;
+      padding: 14px 16px;
+      border-radius: 0 8px 8px 0;
+      color: #4c2d10;
+    }
+    .kpi-list { margin: 0; padding-left: 18px; }
+    .kpi-list li { margin: 7px 0; }
+    .matrix {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .matrix .left, .matrix .right { padding: 14px 16px; border-bottom: 1px solid var(--line); }
+    .matrix .left { background: #f0f5f9; font-weight: 700; }
+    .matrix .right { color: #2b3b52; }
+    .matrix .left:nth-last-child(2), .matrix .right:last-child { border-bottom: 0; }
+    .roadmap {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .roadmap .step {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 158px;
+    }
+    .step .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--slate);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    footer { padding: 22px 0 0; color: var(--muted); font-size: 13px; }
+    @media (max-width: 920px) {
+      .grid.cols-4, .grid.cols-3, .grid.cols-2, .flow, .roadmap { grid-template-columns: 1fr; }
+      .flow .stage::after { display: none; }
+      .matrix { grid-template-columns: 1fr; }
+      .matrix .left { border-bottom: 0; }
+      .matrix .right { border-bottom: 1px solid var(--line); }
+      h1 { font-size: 29px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div class="eyebrow">管理层汇报版 · Doris 数据资产盘点</div>
+      <h1>车联网数据分析架构汇报方案</h1>
+      <p class="subtitle">基于现有 Doris 表资产，构建老板能直接看懂、业务能持续运营、数据团队能落地交付的“经营、风险、质量、能源、智驾、资产价值”六大分析体系。</p>
+    </header>
+
+    <section>
+      <h2>一页结论</h2>
+      <div class="grid cols-4">
+        <div class="metric"><strong>3</strong><span>现有 Doris 数据库分层：ADS、DWD、DWS</span></div>
+        <div class="metric"><strong>92</strong><span>业务表，覆盖车辆行驶、充电、电池、电机、告警、事故、估值</span></div>
+        <div class="metric"><strong>3957</strong><span>字段资产，说明已有丰富的车端行为和健康特征</span></div>
+        <div class="metric"><strong>VID</strong><span>92 张表均出现车辆唯一标识，可作为车辆 360 分析主键</span></div>
+      </div>
+      <p class="note" style="margin-top:16px;">建议把现有表从“应用分散建设”升级为“统一指标经营驾驶舱”：老板每天先看整体健康分、风险车辆、成本效率、产品功能真实使用、资产价值变化，再下钻到车辆、区域、车型、时间、事件。</p>
+    </section>
+
+    <section>
+      <h2>目标蓝图：从车端数据到老板驾驶舱</h2>
+      <div class="flow">
+        <div class="stage accent-blue">
+          <b>数据源</b>
+          <small>国标 CAN 数据、企业标准事件、车辆帧明细、充电片段、告警事件、ADAS/智驾事件、位置与天气特征。</small>
+        </div>
+        <div class="stage accent-teal">
+          <b>DWD 明细层</b>
+          <small>保留事件和片段事实：行驶、停车、充电、告警、碰撞前后数据、车况窗口、车辆帧详情。</small>
+        </div>
+        <div class="stage accent-green">
+          <b>DWS 汇总层</b>
+          <small>按车辆、日期、月份沉淀主题宽表：行驶、充电、电池、电机、智驾、风险驾驶、车辆评估。</small>
+        </div>
+        <div class="stage accent-amber">
+          <b>指标与模型层</b>
+          <small>统一口径、评分模型、风险预警、能耗分析、残值预测、功能渗透率、异常检测。</small>
+        </div>
+        <div class="stage accent-red">
+          <b>管理应用层</b>
+          <small>CEO 经营驾驶舱、风险指挥中心、车辆 360、售后质量看板、智驾产品看板、资产估值看板。</small>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>现有数据资产地图</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>层级</th>
+            <th>现有库 / 表量</th>
+            <th>代表表</th>
+            <th>管理价值</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>DWD 明细层</b></td>
+            <td><code>dwd_vehicle_can_prod</code><br />25 表 / 2187 字段</td>
+            <td><code>dwd_vehicle_frame_detail</code>、<code>dwd_vehicle_gb_non_alarm_trip_agg</code>、<code>dwd_charging_session_fragment_list</code>、<code>dwd_fault_gb_complete_alarm_event_agg</code></td>
+            <td>还原“每辆车发生了什么”：行驶、充电、告警、停车、片段、帧级车况，是事故复盘、质量追溯、模型训练的证据层。</td>
+          </tr>
+          <tr>
+            <td><b>DWS 汇总层</b></td>
+            <td><code>dws_vehicle_sum_prod</code><br />18 表 / 648 字段</td>
+            <td><code>dws_driving_daily_summary</code>、<code>dws_charging_daily_summary</code>、<code>dws_battery_daily_analysis</code>、<code>dws_vehicle_motor_daily_analysis</code>、<code>dws_vehicle_assessment_daily_analysis</code></td>
+            <td>形成“每天/每月每辆车表现如何”：经营效率、能耗、充电习惯、电池健康、电机质量、驾驶风险。</td>
+          </tr>
+          <tr>
+            <td><b>ADS 应用层</b></td>
+            <td><code>ads_vehicle_app_prod</code><br />49 表 / 1122 字段</td>
+            <td><code>possible_accident_event</code>、<code>vehicle_daily_behavior_real_time</code>、<code>vehicle_full_life_cycle_behavior_real_time</code>、<code>vehicle_residual_value_assessment</code>、<code>vehicle_valuation</code></td>
+            <td>已经接近业务页面，但口径需要再统一，最终服务管理驾驶舱、运营预警、售后和资产估值。</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="warning" style="margin-top:16px;">观察到不少 <code>_mv</code>、<code>_test</code>、<code>_temp</code> 表，说明系统已有实时映射和测试链路。正式面向老板汇报前，需要清理生产口径，避免同一个指标多套数。</p>
+    </section>
+
+    <section>
+      <h2>老板驾驶舱：六大主题域</h2>
+      <div class="grid cols-3">
+        <div class="card accent-teal">
+          <h3>1. 经营效率</h3>
+          <p>看车辆是否真正跑起来，资产有没有闲置，区域和车型效率是否健康。</p>
+          <div class="tags"><span class="tag">活跃车辆数</span><span class="tag">总里程</span><span class="tag">行驶时长</span><span class="tag">停车时长</span><span class="tag">百公里电耗</span></div>
+        </div>
+        <div class="card accent-red">
+          <h3>2. 安全风险</h3>
+          <p>看高风险车辆、事故疑似事件、告警密度和危险驾驶行为，服务风控和售后。</p>
+          <div class="tags"><span class="tag">疑似事故</span><span class="tag">千公里告警率</span><span class="tag">疲劳驾驶</span><span class="tag">急加/急减/急转</span><span class="tag">超速</span></div>
+        </div>
+        <div class="card accent-green">
+          <h3>3. 能源与电池</h3>
+          <p>看电池健康、容量衰减、SOC 使用习惯、快充和低电量充电风险。</p>
+          <div class="tags"><span class="tag">电池评分</span><span class="tag">可用容量</span><span class="tag">充放电效率</span><span class="tag">单体压差</span><span class="tag">绝缘异常</span></div>
+        </div>
+        <div class="card accent-amber">
+          <h3>4. 质量与故障</h3>
+          <p>看电机、控制器、充电系统和高压部件异常，支持质量闭环。</p>
+          <div class="tags"><span class="tag">电机温度过高</span><span class="tag">电机故障</span><span class="tag">充电功率波动</span><span class="tag">高压互锁</span><span class="tag">制动系统告警</span></div>
+        </div>
+        <div class="card accent-blue">
+          <h3>5. 智驾产品</h3>
+          <p>看 ACC/TJA、AEB、LDW、FCW 等功能的开启、激活和告警表现。</p>
+          <div class="tags"><span class="tag">ACC 激活里程</span><span class="tag">TJA 激活时长</span><span class="tag">ADAS 事件</span><span class="tag">功能渗透率</span><span class="tag">安全收益</span></div>
+        </div>
+        <div class="card accent-violet">
+          <h3>6. 资产价值</h3>
+          <p>看车辆与电池评分、残值评估、生命周期行为，支持金融、二手车和置换策略。</p>
+          <div class="tags"><span class="tag">车辆评分</span><span class="tag">残值评估</span><span class="tag">车辆估值</span><span class="tag">全生命周期</span><span class="tag">风险扣分项</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>老板最该盯的一级指标</h2>
+      <div class="matrix">
+        <div class="left">公司总体健康分</div>
+        <div class="right">按车队、车型、区域聚合：车辆评分、电池评分、安全风险、能耗效率、质量故障、智驾使用、残值变化。</div>
+        <div class="left">高风险车辆数</div>
+        <div class="right">疑似事故、严重告警、危险驾驶、低 SOC 行驶、过充过放、绝缘异常、电机/高压关键故障。</div>
+        <div class="left">经营效率指数</div>
+        <div class="right">活跃车辆率、日均里程、日均行驶时长、停车占比、跨区域行驶、长时/长距行驶、夜间/高峰出行。</div>
+        <div class="left">能源成本效率</div>
+        <div class="right">百公里电耗、充电总电量、充电时长、快充占比、低 SOC 充电占比、充电功率波动。</div>
+        <div class="left">产品功能真实使用</div>
+        <div class="right">ACC/TJA 激活次数、激活里程、激活时长、FCW/AEB/LDW 触发频次，衡量智驾配置是否创造价值。</div>
+        <div class="left">资产价值变化</div>
+        <div class="right">车辆估值、残值评估、车辆全生命周期行为、电池健康扣分、风险驾驶扣分。</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>建议新增的统一数据集市</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>目标表 / 看板口径</th>
+            <th>建议粒度</th>
+            <th>来源表线索</th>
+            <th>服务对象</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>ads_ceo_fleet_cockpit_daily</code></td>
+            <td>日期 + 车队/区域/车型</td>
+            <td>DWS 行驶、充电、电池、电机、评估汇总表</td>
+            <td>老板日会、周会，快速看整体经营盘面</td>
+          </tr>
+          <tr>
+            <td><code>ads_vehicle_360_profile</code></td>
+            <td>车辆 VID</td>
+            <td>车辆日行为、全生命周期、车辆与电池评分、估值表</td>
+            <td>售后、运营、金融、风控</td>
+          </tr>
+          <tr>
+            <td><code>ads_safety_risk_command_center</code></td>
+            <td>日期 + VID + 事件</td>
+            <td>疑似事故、告警实时、风险驾驶、ADAS 事件、碰撞前后 100s 帧数据</td>
+            <td>安全运营、事故复盘、客服响应</td>
+          </tr>
+          <tr>
+            <td><code>ads_energy_battery_health_board</code></td>
+            <td>日期 + VID + 电池/充电特征</td>
+            <td>DWS 电池分析、充电日汇总、充电系统分析、剩余里程</td>
+            <td>电池质保、能耗优化、充电策略</td>
+          </tr>
+          <tr>
+            <td><code>ads_product_intelligence_board</code></td>
+            <td>日期 + VID + 功能</td>
+            <td>智驾日汇总、ACC/TJA 驾驶日汇总、ADAS 实时事件</td>
+            <td>产品、研发、市场，证明功能使用价值</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>核心分析模型</h2>
+      <div class="grid cols-2">
+        <div class="card">
+          <h3>车辆 360 综合评分</h3>
+          <ul class="kpi-list">
+            <li>安全风险 35%：告警、事故疑似、危险驾驶、疲劳/分心、ADAS 预警。</li>
+            <li>电池能源 25%：容量、压差、温差、充放电效率、绝缘、快充和低 SOC 习惯。</li>
+            <li>运营效率 20%：活跃率、里程、时长、停车占比、能耗。</li>
+            <li>质量健康 15%：电机温度、控制器温度、故障、充电系统波动。</li>
+            <li>资产价值 5%：残值、估值、生命周期行为扣分项。</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>事故与风险预警</h3>
+          <ul class="kpi-list">
+            <li>基于 <code>possible_accident_event</code> 系列做事故疑似、责任场景、高速场景和 24h/7d 前后行为分析。</li>
+            <li>结合告警、ADAS、急加减速、急转、夜间、恶劣天气、低 SOC 行驶，生成高风险车辆名单。</li>
+            <li>输出“风险原因 + 最近证据 + 建议动作”，让管理层看到可执行结论。</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>能耗与充电优化</h3>
+          <ul class="kpi-list">
+            <li>从日行驶、日充电、电池健康表统一计算百公里电耗、充电效率、快充比例、低 SOC 充电比例。</li>
+            <li>识别异常高能耗、频繁快充、低 SOC 行驶和充电功率波动车辆，支持运营降本。</li>
+            <li>按车型、区域、温度、驾驶习惯拆解能耗差异。</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>智驾产品价值证明</h3>
+          <ul class="kpi-list">
+            <li>用 ACC/TJA 激活次数、激活里程、激活时长看功能渗透。</li>
+            <li>用 FCW/AEB/LDW 触发和危险驾驶减少趋势看安全收益。</li>
+            <li>按车型、版本、区域输出产品改进建议。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>数据治理与专业化要求</h2>
+      <div class="grid cols-3">
+        <div class="card">
+          <h3>补齐维度表</h3>
+          <p>建议建设 <code>dim_vehicle</code>、<code>dim_model</code>、<code>dim_region</code>、<code>dim_org_fleet</code>、<code>dim_calendar</code>、<code>dim_alarm_event</code>、<code>dim_weather</code>，否则老板只能看到车辆，难以按车型、区域、组织责任拆解。</p>
+        </div>
+        <div class="card">
+          <h3>统一指标口径</h3>
+          <p>把 <code>pdate</code>、<code>date_id</code>、<code>data_statistic_date</code>、<code>create_time</code> 的语义明确下来；每个指标登记口径、负责人、刷新频率、适用看板。</p>
+        </div>
+        <div class="card">
+          <h3>建立质量红线</h3>
+          <p>对 VID 唯一性、日分区完整性、实时表延迟、异常值、关键字段空值率做监控。老板看板只使用通过质量校验的生产表。</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>落地路线</h2>
+      <div class="roadmap">
+        <div class="step">
+          <span class="num">1</span>
+          <h3>0-2 周：口径盘点</h3>
+          <p>冻结生产表清单，清理 <code>_test</code>、<code>_temp</code> 口径；确认 VID、日期、事件时间、车辆状态等核心字段。</p>
+        </div>
+        <div class="step">
+          <span class="num">2</span>
+          <h3>3-6 周：驾驶舱上线</h3>
+          <p>先上线 CEO 日看板：经营效率、安全风险、能源电池、质量故障、智驾使用、资产价值。</p>
+        </div>
+        <div class="step">
+          <span class="num">3</span>
+          <h3>7-12 周：模型闭环</h3>
+          <p>上线车辆 360 评分、事故风险预警、能耗异常识别、充电健康策略，并打通运营处置结果。</p>
+        </div>
+        <div class="step">
+          <span class="num">4</span>
+          <h3>3-6 个月：经营智能化</h3>
+          <p>建设预测模型：电池衰减、故障预测、残值预测、智驾功能价值评估，进入经营预算和产品决策。</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>给老板的汇报话术</h2>
+      <p class="note">这套架构不是为了多做几个报表，而是把每辆车的运行、风险、能耗、质量、智驾、残值统一成可经营的数字资产。老板每天只需要看三件事：公司车队是否健康，风险和成本在哪里，哪些产品和资产正在创造价值。</p>
+    </section>
+
+    <footer>
+      <p>数据依据：用户提供的 Doris ER HTML 视图。统计结果：3 个库、92 张表、3957 个字段；核心主键线索为 <code>vid</code>，核心时间线索为 <code>pdate</code>、<code>date_id</code>、<code>data_statistic_date</code>、<code>event_time</code>。</p>
+    </footer>
+  </main>
+</body>
+</html>

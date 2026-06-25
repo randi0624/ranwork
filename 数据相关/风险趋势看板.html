@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>永安保险车辆风险趋势分析</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", sans-serif;
+  background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 50%, #0d1f3c 100%);
+  color: #e0e8f5;
+  width: 1400px;
+  padding: 40px;
+}
+.header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid rgba(64,158,255,0.3);
+}
+.header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(90deg, #409eff, #67c23a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+.header .subtitle {
+  font-size: 14px;
+  color: #7a8ba8;
+}
+.kpi-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.kpi-card {
+  flex: 1;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(64,158,255,0.2);
+  border-radius: 12px;
+  padding: 18px 20px;
+  text-align: center;
+}
+.kpi-card .label { font-size: 12px; color: #7a8ba8; margin-bottom: 6px; }
+.kpi-card .value { font-size: 28px; font-weight: 700; color: #409eff; }
+.kpi-card .value.green { color: #67c23a; }
+.kpi-card .value.orange { color: #e6a23c; }
+.kpi-card .value.red { color: #f56c6c; }
+.kpi-card .change { font-size: 11px; color: #67c23a; margin-top: 4px; }
+.kpi-card .change.warn { color: #f56c6c; }
+
+.section {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(64,158,255,0.15);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #409eff;
+  margin-bottom: 14px;
+  padding-left: 12px;
+  border-left: 3px solid #409eff;
+}
+.two-col { display: flex; gap: 20px; }
+.two-col > div { flex: 1; }
+
+/* Table styles */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+table th {
+  background: rgba(64,158,255,0.15);
+  color: #a0c4ff;
+  padding: 8px 10px;
+  text-align: center;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(64,158,255,0.2);
+}
+table td {
+  padding: 7px 10px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+table tr:hover { background: rgba(64,158,255,0.05); }
+.highlight { color: #f56c6c; font-weight: 700; }
+.good { color: #67c23a; font-weight: 700; }
+
+/* Bar chart */
+.bar-chart { margin-top: 10px; }
+.bar-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.bar-label {
+  width: 90px;
+  font-size: 11px;
+  color: #7a8ba8;
+  text-align: right;
+  padding-right: 10px;
+}
+.bar-track {
+  flex: 1;
+  height: 20px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  transition: width 0.5s;
+}
+.bar-fill.blue { background: linear-gradient(90deg, #409eff, #66b1ff); }
+.bar-fill.green { background: linear-gradient(90deg, #67c23a, #85ce61); }
+.bar-fill.orange { background: linear-gradient(90deg, #e6a23c, #ebb563); }
+.bar-fill.red { background: linear-gradient(90deg, #f56c6c, #f89898); }
+
+/* Score grid */
+.score-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.score-item {
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+}
+.score-item .week { font-size: 11px; color: #7a8ba8; margin-bottom: 4px; }
+.score-item .score { font-size: 24px; font-weight: 700; }
+.score-item .detail { font-size: 10px; color: #7a8ba8; margin-top: 4px; }
+
+/* Alert box */
+.alert-box {
+  background: rgba(245,108,108,0.08);
+  border: 1px solid rgba(245,108,108,0.3);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-top: 12px;
+}
+.alert-box .title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f56c6c;
+  margin-bottom: 6px;
+}
+.alert-box ul {
+  list-style: none;
+  padding: 0;
+}
+.alert-box li {
+  font-size: 12px;
+  padding: 3px 0;
+  color: #c0c8d8;
+}
+.alert-box li::before {
+  content: "⚠ ";
+  color: #f56c6c;
+}
+
+/* Recommendation */
+.rec-list { list-style: none; padding: 0; }
+.rec-list li {
+  display: flex;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 12px;
+}
+.rec-list li:last-child { border-bottom: none; }
+.rec-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #409eff;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+.footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 11px;
+  color: #4a5a7a;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>永安保险承保车辆 · 风险趋势分析看板</h1>
+  <div class="subtitle">数据周期：2026.5.22 → 2026.5.29 → 2026.6.5 ｜ 数据来源：车辆全生命周期数据平台</div>
+</div>
+
+<!-- KPI Row -->
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div class="label">在保车辆数</div>
+    <div class="value">13</div>
+    <div class="change">↑ 新增1辆 (W3)</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">总保费（元）</div>
+    <div class="value green">157,775</div>
+    <div class="change">↑ +5,504 元</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">周均里程增量/车</div>
+    <div class="value orange">1,299 KM</div>
+    <div class="change warn">↑ 2.75倍 vs 上周</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">预警周增量</div>
+    <div class="value red">+11,557</div>
+    <div class="change warn">↑ 3.8倍 vs 上周</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">低电量充电占比</div>
+    <div class="value orange">17.3%</div>
+    <div class="change warn">↑ 从13.3%持续攀升</div>
+  </div>
+</div>
+
+<!-- Two Column Layout -->
+<div class="two-col">
+  <!-- Left: Mileage & Warning -->
+  <div>
+    <div class="section">
+      <div class="section-title">行驶里程周增量（KM）</div>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <div class="bar-label">W1→W2</div>
+          <div class="bar-track"><div class="bar-fill blue" style="width:36%">5,663 (7辆活跃)</div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">W2→W3</div>
+          <div class="bar-track"><div class="bar-fill orange" style="width:100%">15,592 (10辆活跃) ↑2.75x</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">智能驾驶预警周增量</div>
+      <table>
+        <thead>
+          <tr><th>维度</th><th>W1→W2</th><th>W2→W3</th><th>加速比</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>预警总量</td><td>+3,052</td><td class="highlight">+11,557</td><td class="highlight">3.8x</td></tr>
+          <tr><td>FCW前碰撞</td><td>+50</td><td class="highlight">+263</td><td class="highlight">5.3x</td></tr>
+          <tr><td>急转弯</td><td>+364</td><td class="highlight">+971</td><td class="highlight">2.7x</td></tr>
+          <tr><td>急减速</td><td>+6</td><td>+18</td><td>3.0x</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Right: TOP5 & Scores -->
+  <div>
+    <div class="section">
+      <div class="section-title">TOP5 预警高发车辆（6.5截止）</div>
+      <table>
+        <thead>
+          <tr><th>#</th><th>车辆编号</th><th>预警总量</th><th>周增</th><th>核心风险</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>8EDCYYh2yfd</td><td class="highlight">14,533</td><td>+1,725</td><td>FCW 659 · 急转 839</td></tr>
+          <tr><td>2</td><td>6oSi0ZWxiXu</td><td class="highlight">11,295</td><td>+1,324</td><td>急转 790</td></tr>
+          <tr><td>3</td><td>7AN8N33t8QG</td><td class="highlight">9,632</td><td>+1,334</td><td>FCW 637 · 急转 625</td></tr>
+          <tr><td>4</td><td>09M71XMora6</td><td>9,145</td><td>+861</td><td>急转 590 · FCW 163</td></tr>
+          <tr><td>5</td><td>2gxTPFedBwM</td><td>5,828</td><td>+499</td><td>急转 525</td></tr>
+        </tbody>
+      </table>
+      <div style="text-align:right;font-size:11px;color:#7a8ba8;margin-top:6px;">TOP5占预警总量 <span class="highlight">86%</span></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">驾驶行为评分趋势</div>
+      <div class="score-grid">
+        <div class="score-item">
+          <div class="week">5.22</div>
+          <div class="score" style="color:#e6a23c">78.4</div>
+          <div class="detail">≥80分: 3辆 ｜ 70-79: 4辆</div>
+        </div>
+        <div class="score-item">
+          <div class="week">5.29</div>
+          <div class="score" style="color:#e6a23c">77.7</div>
+          <div class="detail">≥80分: 2辆 ｜ 70-79: 5辆</div>
+        </div>
+        <div class="score-item">
+          <div class="week">6.5</div>
+          <div class="score good">85.9</div>
+          <div class="detail">≥80分: <b>10辆</b> ｜ 70-79: 0辆</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charging & Health -->
+<div class="two-col">
+  <div class="section">
+    <div class="section-title">充电行为 · 低电量占比趋势</div>
+    <div class="bar-chart">
+      <div class="bar-row">
+        <div class="bar-label">5.22</div>
+        <div class="bar-track"><div class="bar-fill green" style="width:50%">141/1062 · 13.3%</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">5.29</div>
+        <div class="bar-track"><div class="bar-fill orange" style="width:55%">153/1116 · 13.7%</div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">6.5</div>
+        <div class="bar-track"><div class="bar-fill red" style="width:70%">158/913 · 17.3% ↑</div></div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#7a8ba8;margin-top:8px;">故障充电：三周均为 0 ｜ 总充电下降但低电量充电持续增加</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">车辆健康评分 · 主动安全激活</div>
+    <table>
+      <thead><tr><th>维度</th><th>5.22</th><th>5.29</th><th>6.5</th><th>趋势</th></tr></thead>
+      <tbody>
+        <tr><td>健康均分</td><td>90.0</td><td>90.6</td><td class="good">92.6</td><td class="good">↑</td></tr>
+        <tr><td>≥90分车辆</td><td>4</td><td>4</td><td class="good">8</td><td class="good">↑</td></tr>
+        <tr><td>AEB激活</td><td>2</td><td>2</td><td>2</td><td>—</td></tr>
+        <tr><td>LDP激活</td><td>95</td><td>95</td><td>96</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <div style="font-size:11px;color:#7a8ba8;margin-top:8px;">主动安全系统介入极少，主要依赖驾驶员反应</div>
+  </div>
+</div>
+
+<!-- Risk Alert -->
+<div class="alert-box">
+  <div class="title">核心风险信号</div>
+  <ul>
+    <li>FCW前碰撞预警周增速 5.3 倍，第二周新增 263 次，碰撞风险显著上升</li>
+    <li>行驶里程周增量从 472 KM/车 飙升至 1,299 KM/车，使用强度大幅提升</li>
+    <li>TOP5 车辆贡献 86% 预警量，风险高度集中，头部车辆需重点管控</li>
+    <li>低电量充电占比从 13.3% 攀升至 17.3%，电池衰减风险加大</li>
+  </ul>
+</div>
+
+<!-- Recommendations -->
+<div class="section" style="margin-top:20px;">
+  <div class="section-title">与保司沟通建议</div>
+  <ul class="rec-list">
+    <li><span class="rec-num">1</span><span><b>重点监控 TOP5 预警车辆</b> — 对这5辆车进行专项风险评估，尤其关注 FCW 和急转弯高频触发，建议纳入高风险池管理</span></li>
+    <li><span class="rec-num">2</span><span><b>评估里程增速对出险概率的影响</b> — 周均里程增量翻了 2.75 倍，活跃车辆从7辆增至10辆，需动态调整风险模型</span></li>
+    <li><span class="rec-num">3</span><span><b>低电量充电占比纳入 UBI 定价因子</b> — 频繁深度放电加速电池衰减，建议作为电池健康风险的代理指标</span></li>
+    <li><span class="rec-num">4</span><span><b>新增车辆持续跟踪</b> — 第3周新增1辆（保费 6,223 元），需在后续周期重点关注其驾驶行为数据</span></li>
+    <li><span class="rec-num">5</span><span><b>主动安全系统兜底能力有限</b> — AEB 仅激活 2 次、LDP 96 次，驾驶员安全意识仍是核心防线，建议保司加强安全驾驶激励</span></li>
+  </ul>
+</div>
+
+<div class="footer">
+  数据分析日期：2026年6月5日 ｜ 车辆数据主要字段全生命周期表 V1 · 永安保险
+</div>
+
+</body>
+</html>

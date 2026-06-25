@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>车联网数据仓原型 V1</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #637286;
+      --line: #d8e0ea;
+      --soft: #eef4f7;
+      --teal: #0f766e;
+      --blue: #2563eb;
+      --green: #16a34a;
+      --amber: #b45309;
+      --red: #dc2626;
+      --violet: #7c3aed;
+      --cyan: #0891b2;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.6;
+    }
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+    }
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      background: #ffffff;
+      border-right: 1px solid var(--line);
+      padding: 22px 18px;
+    }
+    .brand {
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand b {
+      display: block;
+      font-size: 20px;
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+    .brand span { color: var(--muted); font-size: 13px; }
+    nav { display: grid; gap: 7px; padding-top: 18px; }
+    nav a {
+      color: #27374f;
+      text-decoration: none;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    nav a:hover { background: #eef6f5; border-color: #c8dedb; color: var(--teal); }
+    main { min-width: 0; }
+    .container { max-width: 1220px; margin: 0 auto; padding: 30px 28px 58px; }
+    header {
+      padding: 34px 0 24px;
+      border-bottom: 1px solid var(--line);
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--teal);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+    h1 {
+      margin: 10px 0 10px;
+      font-size: 38px;
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+    h2 {
+      margin: 0 0 16px;
+      font-size: 25px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+    h3 {
+      margin: 0 0 9px;
+      font-size: 17px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+    p { margin: 0 0 12px; }
+    .subtitle { color: var(--muted); font-size: 17px; max-width: 920px; }
+    section { padding: 30px 0; border-bottom: 1px solid var(--line); }
+    .top-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      padding: 0 12px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #24364d;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 13px;
+    }
+    .btn.primary { background: var(--teal); border-color: var(--teal); color: #fff; }
+    .grid { display: grid; gap: 14px; }
+    .cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 17px;
+    }
+    .stat strong { display: block; font-size: 30px; line-height: 1; margin-bottom: 8px; }
+    .stat span { display: block; color: var(--muted); font-size: 13px; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      padding: 2px 9px;
+      font-size: 12px;
+      font-weight: 800;
+      margin: 3px 4px 3px 0;
+    }
+    .layer-map {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(150px, 1fr));
+      gap: 10px;
+      align-items: stretch;
+    }
+    .layer {
+      position: relative;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      min-height: 158px;
+    }
+    .layer::after {
+      content: "";
+      position: absolute;
+      right: -8px;
+      top: 50%;
+      width: 14px;
+      height: 14px;
+      border-top: 2px solid #9aa8ba;
+      border-right: 2px solid #9aa8ba;
+      transform: translateY(-50%) rotate(45deg);
+      background: var(--bg);
+      z-index: 2;
+    }
+    .layer:last-child::after { display: none; }
+    .layer b { display: block; font-size: 15px; margin-bottom: 7px; }
+    .layer small { display: block; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .accent-teal { border-top: 4px solid var(--teal); }
+    .accent-blue { border-top: 4px solid var(--blue); }
+    .accent-green { border-top: 4px solid var(--green); }
+    .accent-amber { border-top: 4px solid var(--amber); }
+    .accent-red { border-top: 4px solid var(--red); }
+    .accent-violet { border-top: 4px solid var(--violet); }
+    .accent-cyan { border-top: 4px solid var(--cyan); }
+    .model {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr 1fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+    .model-col {
+      display: grid;
+      gap: 12px;
+    }
+    .fact {
+      min-height: 338px;
+      display: grid;
+      align-content: center;
+      background: #fff;
+      border: 2px solid #87b6b0;
+      border-radius: 8px;
+      padding: 18px;
+    }
+    .fact h3 { color: var(--teal); font-size: 19px; }
+    .mini {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px;
+      min-height: 106px;
+    }
+    .mini b { display: block; margin-bottom: 6px; }
+    .mini code { color: #17406f; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+      font-size: 14px;
+    }
+    th {
+      background: #eef3f8;
+      color: #26364d;
+      font-size: 13px;
+    }
+    tr:last-child td { border-bottom: 0; }
+    code {
+      font-family: Consolas, Menlo, monospace;
+      color: #17406f;
+      font-size: 12px;
+    }
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .step {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 15px;
+      min-height: 160px;
+    }
+    .step .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #26364d;
+      color: #fff;
+      font-weight: 900;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+    .notice {
+      border-left: 4px solid var(--teal);
+      background: #eef8f6;
+      border-radius: 0 8px 8px 0;
+      padding: 14px 16px;
+      color: #254541;
+    }
+    .warn {
+      border-left: 4px solid var(--amber);
+      background: #fff7ed;
+      border-radius: 0 8px 8px 0;
+      padding: 14px 16px;
+      color: #4c2d10;
+    }
+    .lane {
+      display: grid;
+      grid-template-columns: 210px minmax(0, 1fr);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .lane b, .lane div {
+      padding: 13px 15px;
+      border-bottom: 1px solid var(--line);
+    }
+    .lane b {
+      background: #f0f5f9;
+      color: #26364d;
+    }
+    .lane b:last-of-type, .lane div:last-child { border-bottom: 0; }
+    footer { padding-top: 20px; color: var(--muted); font-size: 13px; }
+    @media (max-width: 1080px) {
+      .shell { grid-template-columns: 1fr; }
+      aside { position: static; height: auto; }
+      nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .layer-map, .model, .timeline, .cols-4, .cols-3, .cols-2 { grid-template-columns: 1fr; }
+      .layer::after { display: none; }
+      .lane { grid-template-columns: 1fr; }
+      .lane b { border-bottom: 0; }
+    }
+    @media (max-width: 560px) {
+      .container { padding: 22px 16px 42px; }
+      h1 { font-size: 30px; }
+      nav { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <div class="brand">
+        <b>车联网数据仓原型 V1</b>
+        <span>Doris 分层建模 · 管理驾驶舱取数底座</span>
+      </div>
+      <nav>
+        <a href="#overview">原型总览</a>
+        <a href="#layers">数仓分层</a>
+        <a href="#model">星型模型</a>
+        <a href="#subjects">主题域</a>
+        <a href="#tables">核心表设计</a>
+        <a href="#lineage">血缘链路</a>
+        <a href="#quality">质量治理</a>
+        <a href="#roadmap">建设路线</a>
+      </nav>
+    </aside>
+
+    <main>
+      <div class="container">
+        <header>
+          <div class="eyebrow">可汇报 HTML 原型 · 数据团队落地版</div>
+          <h1>车联网数据仓原型 V1</h1>
+          <p class="subtitle">基于现有 Doris ADS / DWD / DWS 表资产，补齐 ODS、DIM、指标服务和数据治理，形成可支撑老板驾驶舱、车辆 360、风险预警、能源电池、智驾产品和资产估值的数据仓底座。</p>
+          <div class="top-actions">
+            <a class="btn primary" href="./doris_data_analysis_architecture_boss_view.html">返回架构汇报方案</a>
+            <a class="btn" href="#tables">查看表模型</a>
+            <a class="btn" href="#lineage">查看取数链路</a>
+          </div>
+        </header>
+
+        <section id="overview">
+          <h2>原型总览</h2>
+          <div class="grid cols-4">
+            <div class="card stat"><strong>6 层</strong><span>ODS、DWD、DIM、DWS、ADS、Metric/API，形成完整数仓闭环。</span></div>
+            <div class="card stat"><strong>8 类</strong><span>核心事实：帧明细、行驶、充电、停车、告警、ADAS、事故、估值。</span></div>
+            <div class="card stat"><strong>7 张</strong><span>建议优先补齐维表：车辆、车型、区域、车队、日期、事件、天气。</span></div>
+            <div class="card stat"><strong>1 套</strong><span>统一指标层，解决老板看板“同一指标多套数”的问题。</span></div>
+          </div>
+          <p class="notice" style="margin-top:16px;">这个原型的定位：不是替代现有 Doris 表，而是在现有表之上建立标准数仓口径。现有 DWD/DWS/ADS 可以继续复用，同时新增维表、统一指标层和面向管理场景的 ADS 数据集市。</p>
+        </section>
+
+        <section id="layers">
+          <h2>数仓分层原型</h2>
+          <div class="layer-map">
+            <div class="layer accent-cyan">
+              <b>ODS 接入层</b>
+              <small>车端原始数据、国标报文、企业标准事件、告警、定位、天气、组织和车辆主数据。</small>
+            </div>
+            <div class="layer accent-blue">
+              <b>DWD 明细层</b>
+              <small>复用现有 <code>dwd_vehicle_can_prod</code>，沉淀帧、片段、事件、告警和充电会话事实。</small>
+            </div>
+            <div class="layer accent-teal">
+              <b>DIM 维度层</b>
+              <small>补齐车辆、车型、区域、车队、日期、告警类型、天气维表，用于统一下钻。</small>
+            </div>
+            <div class="layer accent-green">
+              <b>DWS 汇总层</b>
+              <small>复用现有 <code>dws_vehicle_sum_prod</code>，按 VID + 日期/月汇总主题宽表。</small>
+            </div>
+            <div class="layer accent-amber">
+              <b>ADS 集市层</b>
+              <small>面向 CEO 驾驶舱、车辆 360、安全指挥、能源电池、智驾产品、资产估值。</small>
+            </div>
+            <div class="layer accent-red">
+              <b>Metric / API</b>
+              <small>统一指标口径、权限、缓存、取数接口，供 BI、运营系统和预警系统调用。</small>
+            </div>
+          </div>
+        </section>
+
+        <section id="model">
+          <h2>车辆 360 星型模型</h2>
+          <div class="model">
+            <div class="model-col">
+              <div class="mini"><b>车辆维</b><code>dim_vehicle</code><br />VID、VIN、车型、批次、投放日期、当前状态。</div>
+              <div class="mini"><b>车型维</b><code>dim_vehicle_model</code><br />品牌、车型、能源类型、电池容量、智驾配置。</div>
+              <div class="mini"><b>组织车队维</b><code>dim_org_fleet</code><br />客户、车队、运营组织、责任人、业务线。</div>
+            </div>
+            <div class="fact">
+              <h3>核心事实中心</h3>
+              <p><code>fct_vehicle_trip</code> 行驶事实</p>
+              <p><code>fct_charge_session</code> 充电事实</p>
+              <p><code>fct_alarm_event</code> 告警事实</p>
+              <p><code>fct_adas_event</code> 智驾事实</p>
+              <p><code>fct_possible_accident_event</code> 疑似事故事实</p>
+              <p><code>fct_vehicle_health_snapshot</code> 日健康快照</p>
+            </div>
+            <div class="model-col">
+              <div class="mini"><b>日期维</b><code>dim_calendar</code><br />日期、周、月、季度、工作日、节假日、高峰时段。</div>
+              <div class="mini"><b>区域维</b><code>dim_region</code><br />省、市、区县、经纬度网格、运营区域。</div>
+              <div class="mini"><b>事件维</b><code>dim_event_alarm</code><br />事件类型、告警等级、责任归属、处置 SLA。</div>
+            </div>
+          </div>
+          <p class="warn" style="margin-top:16px;">关键设计原则：所有事实表统一用 <code>vid</code> 作为车辆主键，用 <code>event_time</code> 或 <code>pdate</code> 作为时间主轴；所有老板看板指标必须能回溯到事实表和 DWS 汇总表。</p>
+        </section>
+
+        <section id="subjects">
+          <h2>主题域与老板问题</h2>
+          <div class="grid cols-3">
+            <div class="card accent-teal">
+              <h3>经营效率主题</h3>
+              <p>老板问题：车跑得够不够？资产有没有闲置？哪些区域和车型效率低？</p>
+              <span class="pill">活跃车辆率</span><span class="pill">日均里程</span><span class="pill">停车占比</span><span class="pill">跨区行驶</span>
+            </div>
+            <div class="card accent-red">
+              <h3>安全风险主题</h3>
+              <p>老板问题：哪些车最危险？事故苗头在哪里？售后和风控先处理谁？</p>
+              <span class="pill">高风险车辆</span><span class="pill">疑似事故</span><span class="pill">千公里告警率</span><span class="pill">危险驾驶</span>
+            </div>
+            <div class="card accent-green">
+              <h3>能源电池主题</h3>
+              <p>老板问题：能耗成本高在哪里？电池健康有没有劣化？充电习惯是否伤电池？</p>
+              <span class="pill">百公里电耗</span><span class="pill">可用容量</span><span class="pill">快充占比</span><span class="pill">绝缘异常</span>
+            </div>
+            <div class="card accent-amber">
+              <h3>质量故障主题</h3>
+              <p>老板问题：电机、控制器、充电系统、高压部件哪类问题最集中？</p>
+              <span class="pill">电机温度</span><span class="pill">电机故障</span><span class="pill">高压互锁</span><span class="pill">充电波动</span>
+            </div>
+            <div class="card accent-blue">
+              <h3>智驾产品主题</h3>
+              <p>老板问题：智驾功能有没有被用起来？是否真的降低风险、提升卖点？</p>
+              <span class="pill">ACC 激活</span><span class="pill">TJA 激活</span><span class="pill">AEB 触发</span><span class="pill">LDW/FCW</span>
+            </div>
+            <div class="card accent-violet">
+              <h3>资产价值主题</h3>
+              <p>老板问题：车辆和电池还值多少钱？哪些行为正在拉低残值？</p>
+              <span class="pill">车辆评分</span><span class="pill">电池评分</span><span class="pill">残值评估</span><span class="pill">估值变化</span>
+            </div>
+          </div>
+        </section>
+
+        <section id="tables">
+          <h2>核心表设计原型</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>层级</th>
+                <th>建议表名</th>
+                <th>粒度</th>
+                <th>核心字段</th>
+                <th>来源 / 说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>DIM</td>
+                <td><code>dim_vehicle</code></td>
+                <td>一车一行</td>
+                <td><code>vid</code>、VIN、车型、生产批次、投放日期、车队、区域、车辆状态</td>
+                <td>补齐主数据，是所有主题下钻的基础。</td>
+              </tr>
+              <tr>
+                <td>DWD</td>
+                <td><code>fct_vehicle_trip</code></td>
+                <td>一段行程一行</td>
+                <td><code>vid</code>、start_time、end_time、mileage、duration、avg_speed、energy_consumption、start/end location</td>
+                <td>由 <code>dwd_vehicle_gb_non_alarm_trip_agg</code>、<code>dwd_vehicle_start_stop_segments</code> 归一。</td>
+              </tr>
+              <tr>
+                <td>DWD</td>
+                <td><code>fct_charge_session</code></td>
+                <td>一次充电一行</td>
+                <td><code>vid</code>、charge_start_time、charge_end_time、start_soc、end_soc、kwh、avg_power、charge_type</td>
+                <td>由 <code>dwd_charging_session_fragment_list</code>、<code>dwd_vehicle_travel_charge_segments</code> 归一。</td>
+              </tr>
+              <tr>
+                <td>DWD</td>
+                <td><code>fct_alarm_event</code></td>
+                <td>一次告警一行</td>
+                <td><code>vid</code>、event_time、alarm_code、alarm_level、duration、location、status</td>
+                <td>由 <code>dwd_fault_gb_alarm_agg</code>、<code>dwd_fault_gb_complete_alarm_event_agg</code> 归一。</td>
+              </tr>
+              <tr>
+                <td>DWS</td>
+                <td><code>dws_vehicle_daily_health</code></td>
+                <td>日期 + 车辆</td>
+                <td>行驶、充电、电池、电机、告警、风险驾驶、智驾、评分字段</td>
+                <td>整合现有 DWS 日表，作为老板驾驶舱和车辆 360 的主宽表。</td>
+              </tr>
+              <tr>
+                <td>ADS</td>
+                <td><code>ads_ceo_fleet_cockpit_daily</code></td>
+                <td>日期 + 区域/车型/车队</td>
+                <td>活跃车辆数、高风险车辆数、总里程、百公里电耗、故障率、智驾激活率、残值均值</td>
+                <td>老板首页看板，所有指标统一来自 Metric 层。</td>
+              </tr>
+              <tr>
+                <td>ADS</td>
+                <td><code>ads_vehicle_360_profile</code></td>
+                <td>车辆</td>
+                <td>车辆画像、最近行驶、最近充电、健康评分、风险原因、处置状态、估值</td>
+                <td>支持售后、运营、风控、金融和管理层下钻。</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section id="lineage">
+          <h2>典型血缘与取数链路</h2>
+          <div class="lane">
+            <b>经营效率</b>
+            <div><code>dwd_vehicle_gb_non_alarm_trip_agg</code> → <code>dws_driving_daily_summary</code> → <code>dws_vehicle_daily_health</code> → <code>ads_ceo_fleet_cockpit_daily</code> → 活跃率 / 总里程 / 停车占比</div>
+            <b>能源电池</b>
+            <div><code>dwd_charging_session_fragment_list</code> + <code>dws_battery_daily_analysis</code> → <code>ads_energy_battery_health_board</code> → 百公里电耗 / 容量 / 快充风险</div>
+            <b>安全风险</b>
+            <div><code>dwd_fault_gb_complete_alarm_event_agg</code> + <code>possible_accident_event</code> + <code>dws_risky_driving_habits_warning</code> → <code>ads_safety_risk_command_center</code> → 高风险车辆清单</div>
+            <b>智驾产品</b>
+            <div><code>dws_autonomous_behavior_daily_summary</code> + <code>dws_autonomous_acc_tja_driving_daily_summary</code> → <code>ads_product_intelligence_board</code> → ACC/TJA 激活率和安全收益</div>
+            <b>资产估值</b>
+            <div><code>vehicle_full_life_cycle_behavior_real_time</code> + <code>vehicle_and_battery_score</code> + <code>vehicle_residual_value_assessment</code> → <code>ads_vehicle_valuation_board</code> → 残值和扣分项</div>
+          </div>
+        </section>
+
+        <section id="quality">
+          <h2>质量治理原型</h2>
+          <div class="grid cols-3">
+            <div class="card">
+              <h3>完整性</h3>
+              <p>按日期分区检查入库量、车辆覆盖率、DWD 到 DWS 汇总一致性。核心表按小时/天出质量报告。</p>
+              <span class="pill">分区完整</span><span class="pill">VID 覆盖</span><span class="pill">延迟监控</span>
+            </div>
+            <div class="card">
+              <h3>准确性</h3>
+              <p>对 SOC、速度、电压、电流、经纬度、里程、温度设置合理阈值，异常值进入隔离表。</p>
+              <span class="pill">阈值规则</span><span class="pill">异常隔离</span><span class="pill">口径校验</span>
+            </div>
+            <div class="card">
+              <h3>一致性</h3>
+              <p>统一 <code>pdate</code>、<code>date_id</code>、<code>data_statistic_date</code>、<code>create_time</code> 语义，避免不同页面口径冲突。</p>
+              <span class="pill">时间口径</span><span class="pill">指标字典</span><span class="pill">负责人</span>
+            </div>
+          </div>
+          <p class="warn" style="margin-top:16px;">建议把 <code>_test</code>、<code>_temp</code>、临时 MV 表从管理层口径中隔离，只允许“生产认证表 + 认证指标”进入老板驾驶舱。</p>
+        </section>
+
+        <section id="roadmap">
+          <h2>建设路线</h2>
+          <div class="timeline">
+            <div class="step">
+              <span class="num">1</span>
+              <h3>资产梳理</h3>
+              <p>冻结生产表清单，确认现有 ADS/DWD/DWS 的可复用表和废弃表。</p>
+            </div>
+            <div class="step">
+              <span class="num">2</span>
+              <h3>维表补齐</h3>
+              <p>优先建设车辆、车型、区域、车队、日期、事件、天气维表。</p>
+            </div>
+            <div class="step">
+              <span class="num">3</span>
+              <h3>宽表打底</h3>
+              <p>建设 <code>dws_vehicle_daily_health</code>，让所有主题有统一车辆日快照。</p>
+            </div>
+            <div class="step">
+              <span class="num">4</span>
+              <h3>指标认证</h3>
+              <p>建立指标字典和 Metric 层，老板看板只调用认证指标。</p>
+            </div>
+            <div class="step">
+              <span class="num">5</span>
+              <h3>应用上线</h3>
+              <p>上线 CEO 驾驶舱、车辆 360、安全指挥、能源电池和智驾产品看板。</p>
+            </div>
+          </div>
+        </section>
+
+        <footer>
+          <p>原型依据：现有 Doris ER 资产中 ADS 49 表、DWD 25 表、DWS 18 表；核心关联字段为 <code>vid</code>，核心时间字段为 <code>pdate</code>、<code>date_id</code>、<code>data_statistic_date</code>、<code>event_time</code>。</p>
+        </footer>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
